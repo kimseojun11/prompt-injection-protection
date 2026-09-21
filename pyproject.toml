@@ -1,0 +1,32 @@
+[project]
+name = "rag-guard"
+version = "0.0.1"
+description = "RAG 문서에 숨은 프롬프트 인젝션을 탐지하는 다단계 파이프라인"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "numpy>=1.26",
+    "pydantic>=2.7",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.5",
+]
+# 실험 기록(결정 ⑤). 학습·평가 담당만 필요: uv sync --group tracking
+tracking = [
+    "wandb>=0.17",
+]
+
+[tool.uv]
+# 설치 가능한 패키지가 아니라 저장소 루트에서 바로 실행하는 프로젝트
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
