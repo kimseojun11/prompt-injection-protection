@@ -1,0 +1,21 @@
+# ── 0단계 필수 항목 ──
+# 데이터셋·모델 파일은 Git 에 올리지 않는다 (Google Drive / HF 비공개 저장소로 공유)
+data/
+*.ckpt
+*.onnx
+*.db
+.env
+wandb/
+
+# ── Python / 도구 ──
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# ── OS / 에디터 ──
+.DS_Store
+.idea/
+.vscode/
