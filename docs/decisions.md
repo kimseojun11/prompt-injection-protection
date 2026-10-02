@@ -33,9 +33,12 @@
 코드에 이미 반영돼 있습니다. 이견 있으면 1주차 안에 바꾸는 게 쌉니다.
 
 1. **좌표 규칙** — `Span` 은 `[start, end)`, 파이썬 글자 인덱스 단위.
-   `Chunk.span` 은 문서 기준, `offset_map` · `evidence_span` · `DecodedSegment.span` 은 **청크 `raw_text` 기준**.
+   `Chunk.span` 은 문서 기준, `offset_map` · `evidence_span` · `DecodedSegment.span` · `HiddenSpan.span` 은 **청크 `raw_text` 기준**.
    정리본에서 찾은 위치는 반드시 `Chunk.raw_span()` 으로 원문 위치로 바꿔서 내보낸다.
+   `raw_span()` 의 끝은 여러 글자가 한 글자로 합쳐진 경우(NFD 한글 등)도 끝까지 덮고,
+   **바로 뒤에서 지워진 글자(제로폭 등)까지 포함**한다. 공격 문장에 붙어 있던 숨김 문자라 하이라이트에 같이 들어가는 게 자연스럽다.
 2. **`offset_map` 필수** — `len(offset_map) == len(text)` 가 아니면 `Chunk` 생성 자체가 에러. "나중에 추가"를 막기 위함.
+   값은 **감소하면 안 된다**(전처리는 글자 순서를 바꾸지 않는다). 대응표 버그를 Chunk 를 만드는 순간 잡는다.
 3. **모르는 필드는 에러** — 모든 양식이 `extra="forbid"`. 오타 난 필드가 조용히 무시되지 않는다.
 4. **로그는 한 줄 = 한 단계**, `action` 은 최종 판정을 낸 마지막 줄에만 기록. 에스컬레이션율은 `logdb.escalation_rate()`.
 5. **방어 OFF(`defense_enabled=0`)** — 판정은 그대로 돌리고 기록하되, 조치는 항상 `allow`. RAG 데모에서 "막혔을 것"을 보여줄 수 있다.
@@ -43,6 +46,16 @@
    최종 점수 ≥0.9 `block` / ≥0.7 `mask` / ≥0.5 `warn` / 그 외 `allow`. 5단계에서 평가 결과로 조정하고 정책명을 올린다.
 7. **ID 형식** — `chunk_id = "{doc_id}-c{번호}"`, `request_id` 는 요청마다 uuid4 hex.
 8. **모델 버전** — 각 단계는 `model_ver` 를 반드시 채운다(스텁은 `stub-0`). 로그에서 버전별 개선 추이를 그리는 기준.
+
+## 1단계 전처리 규칙 (리뷰 필요)
+
+1. **숨김 텍스트는 지우지 않는다** — HTML 숨김 스타일·주석, MD 주석 등은 `text` 에 그대로 남기고
+   `Chunk.hidden_spans` 에 `{원문 위치, 이유}` 로 표시한다. 실제 RAG 의 AI 는 그 텍스트를 읽기 때문이다.
+   개수는 `TransformLog.hidden_text_marked`.
+2. **복원 방식** — `DecodedSegment.method` 는 base64 / hex / url / rot13 에 더해 `tag_char`(태그 문자, ASCII 스머글링),
+   `html_entity`, `unicode_escape` 까지. 복원 결과는 본문에 섞지 않고 `decoded_segments` 에만 담는다.
+3. **변환 기록은 전부 개수** — `nfkc_changed` 는 참/거짓이 아니라 바뀐 글자 수(NBSP 하나로 참이 되면 신호로 못 씀).
+   이모지 안의 ZWJ 는 `zero_width_removed` 와 따로 센다(정상 문서 오탐 방지).
 
 ## 미결 (다음 회의 안건)
 
